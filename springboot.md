@@ -102,12 +102,74 @@
 ### 实现方法
 
 1. 激活自动装配：`@EnableAutoConfiguration`
-
 2. 实现自动装配：`xxxAutoConfiguration`
-
 3. 配置自动装配实现：`META-INF/spring.factories`
 
-   
+## 静态资源配置原理
+
+### 1、配置过程
+
+#### 自动配置类加载
+
+SpringBoot默认加载自动配置类：xxxAutoConfiguration
+
+#### 自动配置类生效
+
+例如SpringMVC功能的自动配置类 WebMVCAutoConfiguration生效条件
+
+```java
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnWebApplication(type = Type.SERVLET)
+@ConditionalOnClass({ Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class })
+@ConditionalOnMissingBean(WebMvcConfigurationSupport.class)
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE + 10)
+@AutoConfigureAfter({ DispatcherServletAutoConfiguration.class, TaskExecutionAutoConfiguration.class,
+      ValidationAutoConfiguration.class })
+public class WebMvcAutoConfiguration {
+```
+
+#### 给容器中配了些什么
+
+```java
+@SuppressWarnings("deprecation")
+@Configuration(proxyBeanMethods = false)
+@Import(EnableWebMvcConfiguration.class)
+@EnableConfigurationProperties({ WebMvcProperties.class,
+      org.springframework.boot.autoconfigure.web.ResourceProperties.class, WebProperties.class })
+@Order(0)
+public static class WebMvcAutoConfigurationAdapter implements WebMvcConfigurer {
+```
+
+#### 配置文件的相关属性和配置文件中xxx进行了绑定
+
+* 配置文件一般为application.yml
+* WebMvcProperties.class === @ConfigurationProperties(prefix = "spring.mvc")
+* ResourceProperties.class === @ConfigurationProperties(prefix = "spring.resources", ignoreUnknownFields = false)
+* WebProperties.class ===@ConfigurationProperties("spring.web")
+
+### 2、扩展
+
+#### 2.1、配置类中只有一个有参构造器
+
+```java
+//所有参数都能够从容器中获取
+//WebProperties webProperties
+//WebMvcProperties mvcProperties
+//ListableBeanFactory beanFactory
+//HttpMessageConverters
+//ResourceHandlerRegistrationCustomizer
+//DispatcherServletPath
+//ServletRegistrationBean
+public WebMvcAutoConfigurationAdapter(WebProperties webProperties, WebMvcProperties mvcProperties,
+				ListableBeanFactory beanFactory, ObjectProvider<HttpMessageConverters> messageConvertersProvider,
+				ObjectProvider<ResourceHandlerRegistrationCustomizer> resourceHandlerRegistrationCustomizerProvider,
+				ObjectProvider<DispatcherServletPath> dispatcherServletPath,
+				ObjectProvider<ServletRegistrationBean<?>> servletRegistrations) {
+```
+
+
+
+
 
 
 
