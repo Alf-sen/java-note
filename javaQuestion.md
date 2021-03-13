@@ -95,7 +95,11 @@
 * ArrayList底层是基于动态数组实现，连续内存存储数据，可以下标访问（随机访问）。默认容量为0，当第一次往ArrayList集合中添加元素时，底层数组扩容到10。之后再扩容按1.5倍扩容，先建立一个新的数组，然后把旧数组copy到新数组中。确定初始值，然后采用尾插法，其插入效率可能高于LinkedList（LinkedList插入数据时需要构建node对象，大量插入时很耗费资源）。
 * LinkedList底层基于链表实现，存储数据的内存可以分散，便于数据的插入和删除，数据访问效率低。遍历时尽量用iterato，不要用for循环，尽量不要用indexOf返回元素索引，因为可能导致遍历整个链表，过度消耗资源。
 
+##### 11、HashMap与HashTable的区别
 
+* HashMap线程不安全；HashTable有synchronize修饰是线程安全的
+* HashMap可以存key为null，存在下标为0的位置；hashMap的key不可以存null。
+* HashMap底层结构：数组加链表。jdk8之后，数组长度大于64，链表长度大于8转换为红黑树，红黑树高度小于6时再转回链表。
 
 #### springboot的运行机制？
 

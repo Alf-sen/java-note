@@ -1,3 +1,5 @@
+
+
 # Spring Boot
 
 ## 容器功能
@@ -157,7 +159,7 @@ public static class WebMvcAutoConfigurationAdapter implements WebMvcConfigurer {
 //WebMvcProperties mvcProperties
 //ListableBeanFactory beanFactory
 //HttpMessageConverters
-//ResourceHandlerRegistrationCustomizer
+//ResourceHandlerRegistrationCustomizer  找到资源处理器的自定义器
 //DispatcherServletPath
 //ServletRegistrationBean
 public WebMvcAutoConfigurationAdapter(WebProperties webProperties, WebMvcProperties mvcProperties,
@@ -169,15 +171,99 @@ public WebMvcAutoConfigurationAdapter(WebProperties webProperties, WebMvcPropert
 
 
 
+#### 2.2、资源处理的默认规则
+
+```
+@Override
+protected void addResourceHandlers(ResourceHandlerRegistry registry) {
+   super.addResourceHandlers(registry);
+   if (!this.resourceProperties.isAddMappings()) {
+      logger.debug("Default resource handling disabled");
+      return;
+   }
+   ServletContext servletContext = getServletContext();
+   addResourceHandler(registry, "/webjars/**", "classpath:/META-INF/resources/webjars/");
+   addResourceHandler(registry, this.mvcProperties.getStaticPathPattern(), (registration) -> {
+      registration.addResourceLocations(this.resourceProperties.getStaticLocations());
+      if (servletContext != null) {
+         registration.addResourceLocations(new ServletContextResource(servletContext, SERVLET_LOCATION));
+      }
+   });
+}
+```
+
+#### 2.3、欢迎页处理规则
+
+```
+@Bean
+public WelcomePageHandlerMapping welcomePageHandlerMapping(ApplicationContext applicationContext,
+      FormattingConversionService mvcConversionService, ResourceUrlProvider mvcResourceUrlProvider) {
+   WelcomePageHandlerMapping welcomePageHandlerMapping = new WelcomePageHandlerMapping(
+         new TemplateAvailabilityProviders(applicationContext), applicationContext, getWelcomePage(),
+         this.mvcProperties.getStaticPathPattern());
+   welcomePageHandlerMapping.setInterceptors(getInterceptors(mvcConversionService, mvcResourceUrlProvider));
+   welcomePageHandlerMapping.setCorsConfigurations(getCorsConfigurations());
+   return welcomePageHandlerMapping;
+}
+
+要想使用欢迎页，静态资源路径前缀必须是/**,不能自定义前缀
+WelcomePageHandlerMapping(TemplateAvailabilityProviders templateAvailabilityProviders,
+			ApplicationContext applicationContext, Resource welcomePage, String staticPathPattern) {
+		if (welcomePage != null && "/**".equals(staticPathPattern)) {
+			logger.info("Adding welcome page: " + welcomePage);
+			setRootViewName("forward:index.html");
+		}
+		else if (welcomeTemplateExists(templateAvailabilityProviders, applicationContext)) {
+			logger.info("Adding welcome page template: index");
+			setRootViewName("index");
+		}
+	}
+```
 
 
 
 
 
+## 请求参数处理
 
+### 1、请求映射
 
+* xxxMapping
+* Rest风格支持（使用http请求方式动词来表示对资源的处理）
+  * GET-获取   POST-存储   DELETE-删除   PUT-修改
+  * 核心Filter；HiddenHttpMethodFilter
+    * 表单: method=POST，隐藏域 _method = put
+    * 手动在SpringBoot中开启
 
+```java
+//默认关闭
+@Bean
+@ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+@ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+   return new OrderedHiddenHttpMethodFilter();
+}
+```
 
+```yaml
+手动开启
+spring:
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+```
+
+Rest原理（基于表单提交使用REST）
+
+* 表单提交会带上_method=PUT
+* 请求过来被HiddenHttpMethodFilter进行拦截
+  * 判断请求是否正常，且请求方式必须是POST
+    * 获取_method的值，值支持PATCH、PUT和DELETE
+    * 原生request请求（post），包装模式requestWrapper重写了getMethod方法，返回_method传入的值
+    * 过滤器链放行时，使用的时Wrapper。以后再调用时，使用的也是Wrapper的返回值。
+
+Rest使用工具时（postMan）可以直接传入PUT、DELETE等请求方式
 
 ## Servlet三大组件
 
