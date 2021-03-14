@@ -228,6 +228,8 @@ WelcomePageHandlerMapping(TemplateAvailabilityProviders templateAvailabilityProv
 
 ### 1、请求映射
 
+#### 1、rest使用与原理
+
 * xxxMapping
 * Rest风格支持（使用http请求方式动词来表示对资源的处理）
   * GET-获取   POST-存储   DELETE-删除   PUT-修改
@@ -264,6 +266,32 @@ Rest原理（基于表单提交使用REST）
     * 过滤器链放行时，使用的时Wrapper。以后再调用时，使用的也是Wrapper的返回值。
 
 Rest使用工具时（postMan）可以直接传入PUT、DELETE等请求方式
+
+#### 2、请求映射原理
+
+![image-20210314094907082](C:\Users\lenovo\AppData\Roaming\Typora\typora-user-images\image-20210314094907082.png)
+
+doGet->processRequest->doService->doDispatch
+
+### 2、
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Servlet三大组件
 
