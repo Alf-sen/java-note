@@ -16,7 +16,7 @@
   * 不注重如何实现，只关注能干什么。例如mybatis把数据库的增删改查都封装起来，我们直接调用方法就行。
 
 * 继承
-  * 子类继承父类的共通，让后增加自己的实现，可以扩展父类
+  * 子类继承父类的共通，然后增加自己的实现，可以扩展父类
 * 多态
   * 必须有继承
   * 必须重写父类方法
@@ -58,12 +58,12 @@
 #### 7、抽象类与接口的区别
 
 * 抽象类可以由普通的成员函数，接口中方法只能定义public abstract方法，java8后可以定义静态方法和默认方法，用static和default修饰。
-* 抽象类单继承，接口可以实现多个，必须把接口的所有方法都实现，当多个接口由相同的默认方法，在实现多个接口时实现类需要重写默认方法。
+* 抽象类单继承，接口可以实现多个，必须把接口的所有方法都实现，当多个接口有相同的默认方法，在实现多个接口时实现类需要重写默认方法。
 * 抽象类中可以由各种各样的成员变量，接口中成员变量默认都是public static final类型的
 
 ##### 扩充：
 
-* 抽象类的设计目的是方法复用，一般是现有子类，再根据子类的共性抽取出父类。
+* 抽象类的设计目的是方法复用，一般是先有子类，再根据子类的共性抽取出父类。
 * 接口的设计目的是对类的行为进行约束，只是约束了行为的有无，不关心具体的实现。
 * 抽象类表达的时is a的关系，例如小明是一个人；接口表达is like的关系，例如飞机可以像鸟一样飞。
 * 使用场景：关注事物的本质时使用抽象类，关注一个操作的时候用接口。
@@ -87,7 +87,7 @@
 
 * 两个对象相等，hashCode()返回值一定相等，equals()返回true
 * hashCod()返回值相等，两个对象不一定相等（equals()返回不一定时true）
-* 重写equals()方法 hashCode()就必须重写对应的hashCode()，否则就会导致原有类功能出现问题（hashSet可以存相同的对象）
+* 重写equals()方法，就必须重写对应的hashCode()，否则就会导致原有类功能出现问题（hashSet可以存相同的对象）
 * hashCode是标记对象在堆中存储位置唯一值的，如果不重写hashCode()，堆中的两个类是不可能相等的（即使两个对象指向相同的数值）。
 
 #### 10、ArrayList与LinkedList
@@ -355,70 +355,143 @@ Thread是类，也会实现Runnable，Thread提供的API功能更多一些，如
 
 ​    例子：jdbc在注册数据库驱动时，采用class.forName的方式，不依赖具体的驱动类，将驱动类的全限定类名写到配置文件中，通过依赖注入的思想，想要修改数据库类型时，只要改一下这个配置类中驱动类的全限定类名，就可以轻松的替换数据库类型。
 
+#### 34、BeanFactory与ApplicationContext区别与联系
+
+1. ​    ApplicationContext是BeanFactory的子接口，有更丰富的功能：
+   * 继承了MassageSource，支持国际化。
+   * 统一资源文件访问方式。
+   * 提供在监听器中注册bean的事件。
+   * 同时加载多个配置文件。
+   * 载入多个（有继承关系）的上下文，使得每一个上下文作用于特定的层次。
+2. BeanFactory是懒加载，在使用bean的时候才会对bean进行加载实例化，这样就不容易发现spring的一些配置问题，如果某些配置文件缺失，直到第一次使用这个bean时才会抛出异常。优点是占用空间少。
+3. ApplicationContext直接加载，在启动时就会加载所有的bean，这样在启动时就可以发现spring一些配置的问题；而且在运行过程中，由于bean实例已经创建好，不需要花时间再创建，会提高程序运行效率。缺点是会占用大量的空间（如果bean足够多的话）。
+4. BeanFactory已编程的方式进行创建，ApplicationContext还可以用声明的方式进行创建，例如通过ContextLoader创建。
+5. BeanFactory和ApplicationContext都支持BeanPostProcessor和BeanFactoryPostProcessor。但是BeanFactory需要手工注册，ApplicationContext是自动注册。
+
+#### 35、描述一下Spring中bean的生命周期
+
+1. 解析类得到BeanDifinition。
+2. 如果有多个构造器，需要推断构造器。
+3. 确定构造器后，实例化一个对象。
+4. 对于对象中存在@Autowired等注解进行属性填充。
+5. 回调Aware方法，类如BeanNameAware、BeanFactoryAware等。
+6. 调用BeanPostProcessor的初始化前方法。
+7. 调用初始化方法。
+8. 调用BeanPostProcessor的初始化后方法。
+9. 如果是单例Bean，则放入单例池中。
+10. 使用bean。
+11. 关闭Spring容器时，调用DisposableBean的destroy()方法。
+
+#### 36、Spring中支持的几种bean作用域
+
+* singleton：默认单例，每一个Spring容器中只有一个bean实例，由BeanFactory来维护，在每次注入时创建一次，生命周期与IOC容器相同。
+* Prototype：每次调用bean时都会创建一个bean对象。容器中有多个bean对象。
+* request：每一个request请求中创建一个单例bean对象，该对象在此次request请求中可以复用，随着请求的结束而销毁。
+* Session：与request请求相同，每个Sessdion中都有一个单例bean对象，在该Session中可以复用。
+* application：bean被定义为在ServletContext的生命周期中可以复用的单例对象。
+* Websocket：bean被定义为在Websocket的生命周期中可以复用的单例对象。
+
+#### 37、Spring的单例bean是否线程安全
+
+​    不安全！
+
+​	不要在bean中声明任何带有存储数据功能的实例变量或类变量，如果必须如此，就用ThreadLocal将它们变成线程私有的；如果这些实例变量或类变量需要在多线程下共享，就得使用synchronize、lock或者CAS来保证线程安全。
+
+#### 38、Spring如何保证事务获取同一个Connection
+
+​	spring事务管理器利用ThreadLocal为每个线程维护了一套独立的Connection，使各个线程直接相互没有影响。
+
+#### 39、Spring中使用了哪些设计模式
+
+* 代理模式：AOP底层实现原理，Spring采用JDK proxy和CgLib类库。
+* 单例模式：Spring配置文件中定义的bean默认是单例模式。
+* 工厂模式：BeanFactory利用工厂模式创建bean。贯穿BeanFactory与ApplicationContext接口的核心理念。
+* 委派模式：Spring中使用DispecherServlet对请求进行分发。
+* 模板模式：用来处理重复的代码，例如RestTemplate、JmsTemplate等。
 
 
 
+#### 40、Spring中事务的实现方式及其原理
+
+​	spring中的事务概念是数据库层面上的，spring只是在数据库事务的基础上进行扩展，提供了一些利于程序员操作的方法。
+
+​	实现方法有两种，一种是编程式，直接调用具体的事务方法；一种是注解式，利用@Transactional。在某个方法上添加@Transaction注解，就可以开启事务，这个方法下的所有sql就会在一个事务中执行，要么全成功，要么全失败。
+
+​	一个方法添加了@Transactional注解后，spring就会给对应的类生成一个代理对象，这个代理对象做为bean放入容器中，当使用这个代理对象的方法时，如果方法上存在@Transactional注解，就会先将事务的自动提交置为false，然后执行原本的业务逻辑，原有业务逻辑没有问题，代理对象会提交事务，原本业务逻辑执行有问题，就会回滚。默认时回滚RuntimeException和Error，也可以通过@Transactional注解中的rollbackFor属性进行设置。
+
+#### 41、Spring事务的隔离级别
+
+​	Spring事务隔离级别就是数据库事务隔离级别，通常有以下4类：
+
+* Read Uncommitted （读未提交）
+* Read Commited（读已提交、不可重复读）Oracle默认事务隔离级别
+* Repeatable Read（可重复读）Mysql默认事务隔离级别
+* Serialiable（可串行化）
+
+事务隔离级别越高，性能越低，数据安全性越高。
+
+​	Spring与数据库设置的隔离级别不相同时，以Spring设置的隔离级别为准，如果Spring设置的隔离级别数据库不支持，则已数据库设置的为准。
+
+#### 42、Spring的自动装配
+
+xml配置
+
+1. no：指Spring的自动装配时关闭的，需要手动在Bean标签中定义依赖关系。
+2. byName：根据类的名称来装配。当需要对一个bean的属性自动装配时，spring会根据bean的名称在配置文件中寻找一个匹配的bean进行装配，如果找不到则抛异常。
+3. byType：根据类的类型来装配。当需要对一个bean的属性自动装配时，spring根据bean的类型在配置文件中寻找一个匹配的bean进行装配，如果找不到或者找到多个就会抛异常。多个相同类型的需要。。。。。。
+4. Constractor：根据构造器来配置，与byType相似。仅适用于与构造器相同参数的bean。找不到抛异常。
+5. Autodetect：结合Constractor和byType，找到相同参数构造器就用构造器，如果没有再找相同类型的。
+
+注解
+
+@Autowired
+
+#### 43、Spring注入java集合
+
+```xml
+<bean id="javaCollection" class="com.zxs.JavaCollection">
+	<property name="javaList">
+    	<list>
+        	<value>zs</value>
+            <value>ls"/value>
+        </list>
+    </property>
+    <property name="javaSet">
+    	<set>
+        	<value>1</value>
+            <value>2</value>
+        </set>    
+    </property>
+    <property name="javaMap">
+    	<map>
+        	<entry key="1" value="zs"/>
+            <entry key="2" value="ls"/>
+        </map>    
+    </property>
+</bean>
+```
+
+#### 44、Spring、SpringMVC与SpringBoot的区别
+
+* Spring提供了一个IOC容器，利用控制反转和依赖注入，帮我们创建bean并且管理bean之间的依赖关系，可以减少代码的耦合度；提供了AOP思想，可以解决OOP代码重复的问题。spring做为一个中间框架也可以帮助我们更有效的将其他框架整合在一起。
+* SpringMVC提供了一套WEB开发的框架，创建了一个前端控制器DispercherServlet来统一接受web请求，然后定义了一套路由策略（url映射到handle）及适配执行handle，再利用视图解析技术将handle处理的结果返回给前端。
+* SpringBoot则是利用约定大于配置的自动配置思想，简化了Spring与SpringMVC的配置，让我们更容易的开发业务代码；同时整合了多种使用场景的stater，例如redis、es、mongodb等可以开箱即用。
+
+#### 45、SpringMVC的工作流程
+
+1. 用户将请求发给前端控制器DispatcherServlet。
+2. DispatcherServlet调用HandlerMapping处理器映射器（维持url与handler对应关系）。
+3. HandlerMapping确定具体的处理器（xml或者注解），返回给DispatcherServlet。
+4. DispatcherServlet调用HandlerAdapter控制器适配器（适配对应的handler,执行具体的方法）。
+5. HandlerAdapter经过适配得到具体的处理器，执行该处理器。
+6. Controller执行返回ModelAndView。
+7. HandlerAdapter将Controller执行结果ModelAndView返回给DispatcherServlet。
+8. DispercherServlet调用ViewResolver视图解析器。
+9. 视图解析将ModelAndView解析成具体的view返回给DispatcherServlet。
+10. DispatcherServlet根据view渲染视图，并相应给用户。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### springboot的运行机制？
+#### 46、Springboot的运行机制（自动装配原理）
 
 理论回答：
 springbootapplication 说起，springbootconfiguration标注该类为配置类；
@@ -428,6 +501,39 @@ auto configuration package 将主配置所在的包作为为自动配置的包�
 import 将meta-info下面spring.factories的配置的类导入到spring容器里。 
 总结回答：
 springboot根据配置文件，自动装配所属依赖的类，然后通过动态代理的方式将类注入到spring容器里。
+
+#### 47、如何理解SpringBoot的starter
+
+​	例如Spring+SpringMVC在使用mybatis时，需要在xml中定义mybatis中需要使用的bean。而SpringBoot的starter则是建立一个mybatis的starter的jar包，然后创建一个带有@Configuration的配置类，将需要使用的bean定义在配置类中，然后在META-INF/spring.factories中写入该配置类的全路径，这样SpringBoot就会根据规则加载该配置类，将bean注入到容器中。
+
+​	开发人员只要将相应的starter包依赖进应用，进行相应的属性定义（默认的可以不配置，连接数据库url之类的需要配置），即可使用相应的功能能。
+
+#### 48、Mybatis的优缺点
+
+优点
+
+* 使用SQL语句编写，相当灵活；在xml中编写，解除了sql语句与应用程序的耦合，便于统一管理；提供xml标签，可以书写动态sql语句，并可以复用。
+* 与JDBC相比较，消除了大量的冗余代码，不需要手动的连接关闭数据库连接。
+* 数据库支持性好，采用JDBC与数据库连接，凡是JDBC支持的数据库，mybatis就支持。
+* 与spring兼容性好。
+* 提供映射标签，支持对象与数据库ORM字段关系映射；提供对象关系映射标签，支持对象关系组件映射维护。
+
+缺点
+
+* SQL语句的编写工作量过大，尤其是字段多，关联表多的时候，对程序员sql编写能力有要求。
+* SQL语句基于数据库类型，导致数据库可移植性差。
+
+49、Mybatis中#{}与${}的区别
+
+1. #{}是预编译处理，是占位符；${}是字符串替换，是拼接符。
+2. #{}的替换是在DBMS中，变量替换后，对应的变量自动加上单引号。
+3. ${}的替换是在DBMS外，变量传入的是什么就替换成什么。
+
+使用#{}可以有效的防止SQL注入，提高系统的安全性。
+
+
+
+
 
 #### mybatis的二级缓存怎么开启？
 
